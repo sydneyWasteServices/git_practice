@@ -1,6 +1,6 @@
 import xlwings as xw
 from report_outlook.component.style import Style
-
+from datetime import timedelta 
 
 class Basic_component:
     def __init__(self):
@@ -57,6 +57,7 @@ class Basic_component:
 
         date_cell.api.Font.Size = 13
         date_cell.api.Font.Bold = True
+
 
     def beautify_left_columns(self, wb, ws_name: str):
         ws = wb.sheets[ws_name]
@@ -135,13 +136,12 @@ class Basic_component:
             ws_name: str,
             items: object = {},
             cell_loc: str = ""):
-        
+
         if items.__dict__ == {}:
             print(f"{ws_name} items is empty")
             return 0
         else:
             item_dict = items.__dict__
-
 
         if cell_loc == "":
             print(f"inc / exp items start cell is {cell_loc}")
@@ -151,7 +151,6 @@ class Basic_component:
         item_start_cell = wb.sheets[ws_name].range(cell_loc)
 
         item_keys = item_dict.keys()
-
 
         #           Infor                   Column Offset by
         #            title          Figure  offset by 0 , 6
@@ -166,20 +165,20 @@ class Basic_component:
                 print("info does not match offset coordinates")
                 return 0
             else:
-                
+
                 target_cell = self.check_empty_cell(item_start_cell)
 
                 for i, itemName in enumerate(item_info):
-                    
+
                     cells.append(target_cell)
 
                     self.fill_item_sideward(
                         wb,
-                        ws_name, 
+                        ws_name,
                         itemName,
                         item_col_offset[i],
                         target_cell)
-        
+
         return cells
 
 # {itemName : [[infor1, infor2], [1columns, 3 columns]]}
@@ -221,4 +220,3 @@ class Basic_component:
 
         session_total = session_total_title.offset(column_offset=8)
         session_total.value = figure
-    

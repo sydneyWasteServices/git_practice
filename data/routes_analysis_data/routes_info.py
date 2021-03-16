@@ -15,8 +15,6 @@ class Routes_info:
         self.tipping_weight_series = tipping_weight_series
         self.rate = rate
         
-
-    
 # Pick routes weight & rate From series key
     
 

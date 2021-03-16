@@ -14,6 +14,7 @@ class Report_template(Complex_component, Routes_analysis_component):
             wb: object,
             ws_name: list,
             date: str,
+            endDate:str,
             op_inc: object = {},
             op_exp: object = {},
             op_salary: object = {},
@@ -25,6 +26,7 @@ class Report_template(Complex_component, Routes_analysis_component):
             wb,
             ws_name,
             date,
+            endDate,
             "Weekly Financial Report Summary")
 
     # Anchor Cell at B6
@@ -128,6 +130,7 @@ class Report_template(Complex_component, Routes_analysis_component):
                     wb: object,
                     ws_name: str,
                     date: str,
+                    endDate: str,
                     routes_info: object):
 
         super().report_formating(
@@ -138,6 +141,7 @@ class Report_template(Complex_component, Routes_analysis_component):
             wb,
             ws_name,
             date,
+            endDate,
             "Weekly Financial Report Summary")
 
 
@@ -145,6 +149,7 @@ class Report_template(Complex_component, Routes_analysis_component):
             super()
             .income_session(wb, ws_name, routes_info)
             .weight_session(wb, ws_name, routes_info, 9)
+            .gross_operating_margin(wb, ws_name, routes_info, 13)
         )
 
         # route_op_inc

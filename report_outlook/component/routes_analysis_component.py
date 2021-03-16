@@ -9,7 +9,7 @@ class Routes_analysis_component:
             ws_name: str,
             routes_info: object = {},
             anchor_row: int = 6):
-# ====================================================================
+        # ====================================================================
         income_title = routes_info.rev_type
         total_income = routes_info.total_inc
 
@@ -19,18 +19,22 @@ class Routes_analysis_component:
         # Anchor cell in B6
         # Income title at second column and down 6 rows
         income_title_cell = wb.sheets[ws_name].range((anchor_row, 2))
-        income_title_cell.value = income_title
+        income_title_cell.value = f"{income_title} - Income"
+
+        income_rate_cell = income_title_cell.offset(row_offset=1)
+        income_rate_cell.value = '%'
 
         # Income figure - left at 6 columns
         total_income_cell = income_title_cell.offset(column_offset=5)
         total_income_cell.value = total_income
 
-        # Routes number & Income figures
+        # Routes number & Income figures in an array, thus one route income point across the
 
         routes_number_start_cell = total_income_cell.offset(
             row_offset=-1, column_offset=3)
         routes_number_figure_start_cell = routes_number_start_cell.offset(
             row_offset=1)
+
         routes_number = routes_info.booking_price_series.index
         routes_number_figure = routes_info.booking_price_series.values
         routes_number_figure_start_cell.value = routes_number_figure
@@ -50,10 +54,11 @@ class Routes_analysis_component:
         # Rate
         routes_portion = [
             figure/total_income for figure in routes_number_figure]
+
         routes_portion_start_cell = routes_number_figure_start_cell.offset(
             row_offset=1)
-        routes_portion_start_cell.value = routes_portion
 
+        routes_portion_start_cell.value = routes_portion
 
         # store_routes_figure = self._store_routes_figure(ws_name, 1)
         # self._routes_figure = store_routes_figure()
@@ -81,23 +86,50 @@ class Routes_analysis_component:
         weight_title_cell = wb.sheets[ws_name].range((anchor_row, 2))
         weight_title_cell.value = "Weight in Tons"
 
+        weight_rate_cell = weight_title_cell.offset(row_offset=1)
+        weight_rate_cell.value = "%"
+
         # total weight figure
         weight_title_cell.offset(column_offset=5).value = total_weight
 
         tipping_routes_number = routes_info.tipping_weight_series.index
 
+# ========================================
+#       Total Tipping Expense /Rebate
+
+# ['GENERAL_WASTE', => GW
+# 'CARDBOARD', => CB
+# 'COMINGLED', => CM
+
+# 'SUBCONTRACTED', => Nothing
+# 'UOS', => GW
+# 'TOTAL']
+        expense_or_rebate_cell = weight_rate_cell.offset(row_offset=1)
+
+        if ws_name == 'GENERAL_WASTE' or ws_name == 'COMINGLED':
+            expense_or_rebate_cell.value = "Less : Tipping Expense"
+            # expense figure
+            expense_or_rebate_cell.offset(
+                column_offset=5).value = total_weight * routes_info.rate
+
+        elif ws_name == 'CARDBOARD':
+            expense_or_rebate_cell.value = "Add : Tipping Rebate"
+            # Rebate figure
+            expense_or_rebate_cell.offset(
+                column_offset=5).value = total_weight * routes_info.rate
+
         # print(self._routes_number_loc)
 # ============================================
     # Routes income position
 
-        not_exist_routes = [num for num in tipping_routes_number if num not in self._routes_number_loc]
-        exist_routes = [num for num in tipping_routes_number if num in self._routes_number_loc]
+        not_exist_routes = [
+            num for num in tipping_routes_number if num not in self._routes_number_loc]
+        exist_routes = [
+            num for num in tipping_routes_number if num in self._routes_number_loc]
 
         # # print(f"{not_exist_routes} in {ws_name} Tipping but not in {ws_name} Route Booking")
         # # print(exist_routes)
 
-        def fill_weight(route_num):
-            
 # ['GENERAL_WASTE', => GW
 # 'CARDBOARD', => CB
 # 'COMINGLED', => CM
@@ -105,33 +137,142 @@ class Routes_analysis_component:
 # 'UOS', => GW
 # 'TOTAL']
 
-        # posiiton
-            route_weight = self._routes_number_loc[route_num].offset(row_offset=rotues_position)
-            route_weight_portion = self._routes_number_loc[route_num].offset(row_offset=rotues_position+1)
+        def fill_weight(route_num):
 
-        # value
+            # posiiton
+            route_weight = self._routes_number_loc[route_num].offset(
+                row_offset=rotues_position)
+            route_weight_portion = self._routes_number_loc[route_num].offset(
+                row_offset=rotues_position+1)
+
+            # value
             route_weight.value = routes_info.tipping_weight_series[route_num]
-            route_weight_portion.value = routes_info.tipping_weight_series[route_num] / total_weight
-        
+            route_weight_portion.value = routes_info.tipping_weight_series[
+                route_num] / total_weight
+
             if ws_name == 'SUBCONTRACTED':
                 # print(f"haha {ws_name}")
                 pass
             elif ws_name == 'UOS':
                 # print(f"yeahyeah {ws_name}")
                 pass
-            elif  ws_name == 'TOTAL':
+            elif ws_name == 'TOTAL':
                 # print(f"goodgood {ws_name}")
                 pass
             else:
-                route_weight_figure = self._routes_number_loc[route_num].offset(row_offset=rotues_position+2)
-                route_weight_figure.value = routes_info.tipping_weight_series[route_num] * routes_info.rate
-            
+                route_weight_figure = self._routes_number_loc[route_num].offset(
+                    row_offset=rotues_position+2)
+                route_weight_figure.value = routes_info.tipping_weight_series[
+                    route_num] * routes_info.rate
 
         [fill_weight(num) for num in exist_routes]
         # [print(self._routes_number_loc[number]) for number in tipping_routes_number]
 
         return self
 # =========================================
+
+    def gross_operating_margin(
+            self,
+            wb: object,
+            ws_name: str,
+            routes_info: object = {},
+            anchor_row: int = 6):
+
+        if anchor_row == 6:
+            print(f"Gross Operating Margin {ws_name} Cell in B6")
+
+        rotues_position = anchor_row - 5
+
+        routes_num = routes_info.booking_price_series.index
+
+# ========================================================
+# Route Gross Operating Margin 
+        def routes_gross_operating_margin(route_num: str):
+            
+            if ws_name == 'GENERAL_WASTE' or ws_name == 'COMINGLED':
+
+                total_gross_margin = routes_info.total_inc - (routes_info.total_weight * routes_info.rate)
+
+                route_gross_operating_margin_cell = self._routes_number_loc[route_num].offset(
+                    row_offset=rotues_position)
+                route_gross_operating_margin_portion_cell = self._routes_number_loc[route_num].offset(
+                    row_offset=rotues_position+1)
+
+                try:
+                    route_expense = routes_info.tipping_weight_series[route_num] * routes_info.rate
+                except:
+                    route_expense = 0
+
+
+                route_num_gross_operating_margin = (
+                    routes_info
+                        .booking_price_series[route_num] - route_expense)
+
+
+                route_gross_operating_margin_cell.value = route_num_gross_operating_margin
+                route_gross_operating_margin_portion_cell.value = route_num_gross_operating_margin / total_gross_margin
+
+            elif ws_name == 'CARDBOARD':
+
+                total_gross_margin = routes_info.total_inc + (routes_info.total_weight * routes_info.rate)
+
+                route_gross_operating_margin_cell = self._routes_number_loc[route_num].offset(
+                    row_offset=rotues_position)
+                route_gross_operating_margin_portion_cell = self._routes_number_loc[route_num].offset(
+                    row_offset=rotues_position+1)
+
+
+                try:
+                    route_rebate = routes_info.tipping_weight_series[route_num] * routes_info.rate
+                except:
+                    route_rebate = 0
+
+                route_num_gross_operating_margin = (
+                    routes_info
+                        .booking_price_series[route_num] + route_rebate)
+
+                route_gross_operating_margin_cell.value = route_num_gross_operating_margin
+                route_gross_operating_margin_portion_cell.value = route_num_gross_operating_margin / total_gross_margin
+# ========================================================
+
+# Total Gross Operating Margin
+
+        # ['GENERAL_WASTE', => GW
+        # 'CARDBOARD', => CB
+        # 'COMINGLED', => CM
+
+# Position will be different
+        # 'SUBCONTRACTED', => Nothing
+        # 'UOS', => GW
+        # 'TOTAL']
+        if ws_name == 'GENERAL_WASTE' or ws_name == 'COMINGLED':
+            gross_operating_margin_cell = wb.sheets[ws_name].range(
+                (anchor_row, 2))
+            gross_operating_margin_cell.value = "Gross Operating Margin"
+
+            gross_operating_margin_cell.offset(
+                column_offset=5).value = routes_info.total_inc - (routes_info.total_weight * routes_info.rate)
+
+            gross_operating_margin_cell.offset(
+                row_offset=1).value = "%"
+            
+            [routes_gross_operating_margin(num) for num in routes_num]
+
+        elif ws_name == 'CARDBOARD':
+            gross_operating_margin_cell = wb.sheets[ws_name].range(
+                (anchor_row, 2))
+            gross_operating_margin_cell.value = "Gross Operating Margin"
+
+            gross_operating_margin_cell.offset(
+                column_offset=5).value = routes_info.total_inc + (routes_info.total_weight * routes_info.rate)
+
+            gross_operating_margin_cell.offset(
+                row_offset=1).value = "%"
+
+            [routes_gross_operating_margin(num) for num in routes_num]
+
+        # route info series => it has the route income
+        pass
 
     def _get_cells_loc(
             self,
@@ -152,17 +293,15 @@ class Routes_analysis_component:
             self,
             routes: str,
             figure: float,
-            new_state : object = {}):
-            
-            current_state = new_state 
+            new_state: object = {}):
 
-            def store_state():
-                current_state[routes] = figure
-                return current_state
+        current_state = new_state
 
-            return store_state
+        def store_state():
+            current_state[routes] = figure
+            return current_state
 
-
+        return store_state
 
         # def list_routes_cells_position(myDict : dict, target_cell : object):
         #     if target_cell.value is None:

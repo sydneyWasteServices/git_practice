@@ -10,7 +10,6 @@ from data.routes_analysis_data.routes_info import Routes_info
 # from data.routes_analysis_data.all_routes_info import All_routes_info
 
 from data.rate import Rate
-
 from data_transform.WE_transform import WE_transform as dt_wet
 from revenue.revenue import Revenue as rev
 from revenue.revenue_by_type import Revenue_by_type
@@ -21,7 +20,7 @@ from report_outlook.component.basic_component import Basic_component as bc
 
 import xlwings as xw
 import pandas as pd
-import time
+from datetime import timedelta 
 
 # Fixed as Weds to Tues
 # Start with df, suppose it is querying from Wed
@@ -29,9 +28,9 @@ import time
 # dataVault\waste_edge_booking_data\23.12.2020_to_26.1.2021
 # $ /c/Users/gordon/Desktop/
 
-booking_path = "../../ubuntuShareDrive/Datasets/booking_weekly/9th_2021.csv"
+booking_path = "../../ubuntuShareDrive/Datasets/booking_weekly/10th_2021.csv"
 
-tipping_path = "../../ubuntuShareDrive/Datasets/tipping_weekly/9th_2021.csv"
+tipping_path = "../../ubuntuShareDrive/Datasets/tipping_weekly/10th_2021.csv"
 
 list_rev_types = ['GENERAL_WASTE',
                   'CARDBOARD',
@@ -60,14 +59,16 @@ resampled_df = rev().resample_by_7d(trans_df)
 date_keys = rev().date_keys(resampled_df)
 
 print(date_keys)
-print(len(date_keys))
+# print(len(date_keys))
 
 current_date = date_keys[0].date()
+
+# Day include the selected date so is days=6
+end_date = date_keys[0].date() + timedelta(days=6)
 
 df_by_date = rev().get_df_by(resampled_df, current_date)
 
 booking_df = Revenue_by_type(df_by_date)
-
 
 print(f"current_date is {current_date}")
 
@@ -100,7 +101,7 @@ cm_inc = booking_df.total_inc('COMINGLED')
 sub_inc = booking_df.total_inc('SUBCONTRACTED')
 uos_inc = booking_df.total_inc('UOS')
 # rate data => General Waste, Cardboard, Comingle, Organics
-rate = Rate(275, 105, 190, 240)
+rate = Rate(265, 105, 190, 240)
 fr_inc = 57038
 
 
@@ -132,6 +133,7 @@ weekly_report = rt()
         wb,
         "WEEKLY_SUMMARY",
         current_date,
+        end_date,
         current_op_inc,
         current_op_exp,
         current_op_salary,
@@ -170,8 +172,7 @@ def create_routes_info(rev_type: str):
                 'CO': rate.COMINGLED
             },
             'TOTAL' : 0
-            }
-        
+            }        
         return switcher.get(type_choice)
 
     route_rate = rate_switcher(rev_type)
@@ -197,6 +198,7 @@ routes_info_data = [create_routes_info(rev_type)
      .by_rev_type(wb,
                   route_info_data.rev_type,
                   current_date,
+                  end_date,
                   route_info_data)
      for route_info_data in routes_info_data]
 )
