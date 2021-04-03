@@ -1,195 +1,159 @@
 import xlwings as xw
 import typing
-from report_outlook.report_outlook_positioning import Report_outlook_positioning
+from report_outlook.component.complex_component import Complex_component
+from report_outlook.component.routes_analysis_component import Routes_analysis_component
 
 
-class Report_template(Report_outlook_positioning):
+class Report_template(Complex_component, Routes_analysis_component):
     def __init__(self):
         super().__init__()
         return
-    # list_of_wsname  = list[str]
 
-    def add_sheets(
+    def weekly_op_summary(
             self,
             wb: object,
-            list_of_wsname=[]):
-        # print(list_of_wsname)
-        num_list_of_wsname = len(list_of_wsname)
-        num_sheets = len(wb.sheets)
+            ws_name: list,
+            date: str,
+            endDate:str,
+            op_inc: object = {},
+            op_exp: object = {},
+            op_salary: object = {},
+            mv_exp: object = {},
+            admin_exp: object = {},
+            bins_exp: object = {}):
 
-        if num_list_of_wsname > num_sheets:
-            add_num_sheets = num_list_of_wsname - num_sheets
-            [wb.sheets.add() for n in range(add_num_sheets)]
+        super().report_headers(
+            wb,
+            ws_name,
+            date,
+            endDate,
+            "Weekly Financial Report Summary")
 
-        for i, wsname in enumerate(list_of_wsname):
-            wb.sheets[i].name = wsname
+    # Anchor Cell at B6
+    # Operating Income
+    # Table Headers
 
-# For each of Worksheet
-    def paul_weekly_fr1(
-            self,
-            wb: object,
-            ws_name: str = "weekly_fr",
-            start_date: str = "dd/mm/yyyy",
-            we_income_items: object = {},
-            service_income_items: object = {},
-            fix_income: float = 0,
-            cb_weight: float = 0,
-            gw_weight: float = 0,
-            cm_weight: float = 0,
-            org_weight: float = 0):
+        op_tb_header = ["Ton", "Rate per Ton", "% of Total Operating Inc"]
 
-        ws = wb.sheets[ws_name]
+        no_tb_header = []
 
-        # report formating
-        # ========================
-        super().format_ws_font_style_to_arial(wb, ws_name)
-        super().format_left_columns(wb, ws_name)
-        # ========================
+        super().report_formating(
+            wb,
+            ws_name)
 
-        # Financial Report Headers
-        # =======================
-        # Header title
-        # start date
-        # finish date
-        super().format_weekly_fr1_header(wb, ws_name, start_date)
-
-        # B4 Anchor Shell
-        # Assume report contents are start with B4
-        # service income session
-        super().format_weekly_fr1_service_income(wb, ws_name)
-
-        # Down B4 of 6 cell, will be change to dynamic 
-        # When there are more service income item 
-        super().format_weekly_fr1_operating_income(wb, ws_name, we_income_items)
-
-        # Must be refractor as picking object key
-        # point to the value
-        # operating expense 
-        super().format_weekly_fr1_operating_expense(wb, ws_name)
-
-        # Total employment expense
-        super().employment_exp(wb, ws_name)
-
-        # MV expense
-        super().mv_exp(wb, ws_name)
-
-        # General Expense
-        super().general_exp(wb, ws_name)
-
-        # Purchase Expense
-        super().purchase(wb, ws_name)
-
-
-
-
-
-
-
-         
-
-
-
-    # Revenue Report template as Vectical
-
-    def report_templates_vertical1(self, wb: object, rev_type_name: str, series: object, df_start_date: str):
-        total_income = 0
-        route_num = []
-        route_incomes = []
-
-        print(rev_type_name)
-        if rev_type_name == 'total':
-            total_income = series.Price.sum()
-
-            route_nums = series.groupby('Route number').Price.sum()
-
-            route_nums_keys = route_nums.keys()
-
-            route_nums_keys = super().transform_list_to_nested_list(
-                route_nums_keys)
-            [route_incomes.append(route_income) for route_income in route_nums]
-            route_incomes = super().transform_list_to_nested_list(route_incomes)
-
+        # Anchor at B10
+        # Operating Income
+        if op_inc:
+            super().session(
+                wb,
+                ws_name,
+                "Operating Income",
+                True,
+                op_tb_header,
+                op_inc,
+                10)
         else:
-            list_of_route_num = rev.rev_type_hardcode(rev_type_name)
-            series_per_rev_type = rev.filter_df_by_rev_routes(
-                series, list_of_route_num)
-            total_income = series_per_rev_type.Price.sum()
+            print("Operating income items is empty")
+            return 0
 
-            route_nums = series_per_rev_type.groupby(
-                'Route number').Price.sum()
-
-            route_nums_keys = route_nums.keys()
-
-            route_nums_keys = super().transform_list_to_nested_list(
-                route_nums_keys)
-
-            [route_incomes.append(route_income) for route_income in route_nums]
-            route_incomes = super().transform_list_to_nested_list(route_incomes)
-
-            # route number and income
-
-        super().format_ws_font_style_to_arial(wb, rev_type_name)
-        super().format_headers(wb, rev_type_name, df_start_date)
-        super().format_left_columns(wb, rev_type_name)
-        super().format_report_content_total_income(wb, rev_type_name, total_income)
-        super().routes_rev_display_vertical(
-            wb, rev_type_name, route_nums_keys, route_incomes)
-
-    # ======================================================
-
-
-# Revenue Report template as Horizontal
-# ======================================================
-
-    def report_templates_horizontal(self, wb: object, rev_type_name: str, series: object, df_start_date: str):
-        total_income = 0
-        route_num = []
-        route_incomes = []
-
-    # ===============================================
-        # Building the total_sheet
-        if rev_type_name == 'total':
-            total_income = series.Price.sum()
-
-            route_nums = series.groupby('Route number').Price.sum()
-        # convert index List to list
-            route_nums_keys = route_nums.keys()
-            route_nums_keys = route_nums_keys.tolist()
-        #    route_nums_keys = super().transform_list_to_nested_list(route_nums_keys)
-            [route_incomes.append(route_income) for route_income in route_nums]
-
-    # ===============================================
-        # build by each page
-    # ===============================================
+    # Anchor at B24
+    # Operating Expense
+        if op_exp:
+            super().session(
+                wb,
+                ws_name,
+                "Operating Expense",
+                False,
+                op_tb_header,
+                op_exp,
+                24)
         else:
+            print("Operating Expense items is empty")
+            return 0
 
-            list_of_route_num = rev.rev_type_hardcode(rev_type_name)
-            series_per_rev_type = rev.filter_df_by_rev_routes(
-                series, list_of_route_num)
-            total_income = series_per_rev_type.Price.sum()
+        if op_salary:
+            super().session(
+                wb,
+                ws_name,
+                "Operating Salary",
+                False,
+                no_tb_header,
+                op_salary,
+                36)
+        else:
+            print("Operating Salary items is empty")
+            return 0
 
-            route_nums = series_per_rev_type.groupby(
-                'Route number').Price.sum()
+        if mv_exp:
+            super().session(
+                wb,
+                ws_name,
+                "Motor Vehicle Expense",
+                False,
+                no_tb_header,
+                mv_exp,
+                43)
+        else:
+            print("Motor Vehicle expense items is empty")
+            return 0
 
-            # convert index List to list
-            route_nums_keys = route_nums.keys()
-            route_nums_keys = route_nums_keys.tolist()
-            # route_nums_keys = super().transform_list_to_nested_list(route_nums_keys)
+        if admin_exp:
+            super().session(
+                wb,
+                ws_name,
+                "General & Administration",
+                False,
+                no_tb_header,
+                admin_exp,
+                59)
+        else:
+            print("Admin expense items is empty")
+            return 0
 
-            [route_incomes.append(route_income) for route_income in route_nums]
-            #    ============================================================================
-            # populate all rev (Need to refactor)
-            super().display_rev_type_in_total_sheet(wb, rev_type_name, total_income)
+        if bins_exp:
+            super().session(
+                wb,
+                ws_name,
+                "Bins Purchase",
+                False,
+                no_tb_header,
+                bins_exp,
+                68)
+        else:
+            print("Bins expense items is empty")
+            return 0
 
-            #    ============================================================================
-    # ===============================================
-            # route_incomes = super().transform_list_to_nested_list(route_incomes)
+        pass
+# ===================================================================================
 
-            # route number and income
+    def by_rev_type(self,
+                    wb: object,
+                    ws_name: str,
+                    date: str,
+                    endDate: str,
+                    routes_info: object):
 
-        super().format_ws_font_style_to_arial(wb, rev_type_name)
-        super().format_headers(wb, rev_type_name, df_start_date)
-        super().format_left_columns(wb, rev_type_name)
-        super().format_report_content_total_income(wb, rev_type_name, total_income)
-        super().routes_rev_display_horizontal(
-            wb, rev_type_name, route_nums_keys, route_incomes)
+        super().report_formating(
+            wb,
+            ws_name)
+
+        super().report_headers(
+            wb,
+            ws_name,
+            date,
+            endDate,
+            "Weekly Financial Report Summary")
+
+
+        (
+            super()
+            .income_session(wb, ws_name, routes_info)
+            .weight_session(wb, ws_name, routes_info, 9)
+            .gross_operating_margin(wb, ws_name, routes_info, 13)
+        )
+
+        # route_op_inc
+        # {
+        # routesName : [1,2,3,4,5]
+        # routesInc : [M1, M2, M3, M4]
+        # }
